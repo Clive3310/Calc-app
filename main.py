@@ -10,28 +10,49 @@ class Text_panel:
         self.color = (0, 0, 0)
         self.text = text
         self.ren_text = self.font.render(text, True, self.color)
+        self.text_height = self.ren_text.get_height()
+        self.stock_width = self.font.render('1', True, self.color).get_width()
 
-        self.limit_length = 33
-        self.good_symb = '0123456789-+/*().^'
+        self.limit_length = 25
+        self.good_symb = '0123456789-+/*().^%'
     
-    def update(self, text: str):
+    def update_to_new(self, text: str):
         self.text = text
         self.ren_text = self.font.render(text, True, self.color)
     
     def add(self, symb: str):
+        if self.text == 'Error: Division by zero':
+            self.text = ''
         if symb in self.good_symb and len(self.text) < self.limit_length:
             self.text = self.text + symb
-            self.ren_text = self.font.render(self.text, True, self.color) 
+        self.ren_text = self.font.render(self.text, True, self.color) 
     
     def b_space(self):
         if self.text:
-            self.text = self.text[:-1]
+            if self.text[0] not in self.good_symb:
+                self.text = ''
+            else:
+                self.text = self.text[:-1]
             self.ren_text = self.font.render(self.text, True, self.color)
     
     def draw(self, surf: pg.Surface, end, height):
         pos = end - self.ren_text.get_width() - 5, height
         surf.blit(self.ren_text, pos)
 
+        if not self.text:
+            pg.draw.rect(surf, (50, 50, 50), (end - self.stock_width - 5, height, self.stock_width, self.text_height))
+    
+    def eval_and_replace(self):
+        if not self.text or self.text[0] not in self.good_symb:
+            return
+        
+        self.text = self.text.replace('^', '**')
+        try:
+            self.text = str(eval(self.text))
+        except Exception as e:
+            self.text = e.__class__.__name__
+        
+        self.ren_text = self.font.render(self.text, True, self.color) 
 
 class Output_panel:
 
@@ -93,6 +114,8 @@ class Main_window:
                 elif event.type == pg.KEYDOWN:
                     if event.key == pg.K_BACKSPACE:
                         self.panel.text_panel.b_space()
+                    elif event.key == pg.K_RETURN:
+                        self.panel.text_panel.eval_and_replace()
                     else:
                         self.panel.text_panel.add(event.unicode)
             
