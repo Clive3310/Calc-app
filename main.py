@@ -13,7 +13,7 @@ class Text_panel:
         self.text_height = self.ren_text.get_height()
         self.stock_width = self.font.render('1', True, self.color).get_width()
 
-        self.limit_length = 25
+        self.limit_length = 19
         self.good_symb = '0123456789-+/*().^%'
     
     def update_to_new(self, text: str):
@@ -54,6 +54,7 @@ class Text_panel:
         
         self.ren_text = self.font.render(self.text, True, self.color) 
 
+
 class Output_panel:
 
     def __init__(self, width, height, text_panel: Text_panel) -> None:
@@ -64,7 +65,7 @@ class Output_panel:
         self.s = pg.surface.Surface((self.width, self.height))
         self.s.fill((200, 200, 200))
 
-        self.text_y = 31
+        self.text_y = (self.height - self.text_panel.text_height) // 2
         self.text_panel.draw(self.s, self.width, self.text_y)
 
     def draw(self, surf: pg.surface.Surface, dest):
@@ -75,18 +76,53 @@ class Output_panel:
         self.text_panel.draw(self.s, self.width, self.text_y)
 
 
-class Button_panel:
+class Button:
 
-    def __init__(self, width, height) -> None:
+    def __init__(self, width, height, color, text, func=lambda x: print(x)) -> None:
         self.width = width
         self.height = height
+        self.color = color
+        self.text = text
+        self.func = func
+        self.box = None
+
+        self.s = pg.surface.Surface((self.width, self.height))
+        self.s.fill(self.color)
+    
+    def draw(self, surf: pg.Surface, dest, pos):
+        if self.box is None:
+            self.box = pg.rect.Rect(dest[0] + pos[0], dest[1] + pos[1], self.width, self.height)
+        surf.blit(self.s, dest)
+    
+    def check_pressed(self, mouse_pos):
+        if self.box is None:
+            print('Error: Button hasnt been drawn')
+            return
+        return self.box.collidepoint((mouse_pos[0], mouse_pos[1]))
+
+    def activate(self):
+        self.func(self.text)
+
+
+class Button_panel:
+
+    def __init__(self, width, height, pos) -> None:
+        self.width = width
+        self.height = height
+        self.pos = pos
 
         self.s = pg.surface.Surface((self.width, self.height))
         self.s.fill((100, 100, 100))
+
+        self.b1 = Button(50, 50, (0, 0, 0), '1')
+        self.b1.draw(self.s, (10, 10), self.pos)
     
     def draw(self, surf: pg.surface.Surface, dest):
         surf.blit(self.s, dest)
-
+    
+    def handle_press(self, mouse_pos):
+        if self.b1.check_pressed(mouse_pos):
+            self.b1.activate()
 
 class Main_window:
 
@@ -118,6 +154,8 @@ class Main_window:
                         self.panel.text_panel.eval_and_replace()
                     else:
                         self.panel.text_panel.add(event.unicode)
+                elif event.type == pg.MOUSEBUTTONDOWN:
+                    self.button_panel.handle_press(pg.mouse.get_pos())
             
             self.update()
             screen.blit(self.s, (0, 0))
@@ -133,9 +171,9 @@ class Main_window:
 
 def main():
     text_panel = Text_panel('')
-    panel = Output_panel(400, 100, text_panel)
-    button_panel = Button_panel(400, 400)
-    window = Main_window(panel, button_panel, 400, 500)
+    panel = Output_panel(300, 100, text_panel)
+    button_panel = Button_panel(300, 300, (0, 100))
+    window = Main_window(panel, button_panel, 300, 400)
     window.mainloop()
 
 
