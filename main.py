@@ -21,7 +21,7 @@ class Text_panel:
         self.ren_text = self.font.render(text, True, self.color)
     
     def add(self, symb: str):
-        if self.text == 'Error: Division by zero':
+        if self.text and self.text[0] not in self.good_symb:
             self.text = ''
         if symb in self.good_symb and len(self.text) < self.limit_length:
             self.text = self.text + symb
@@ -106,23 +106,27 @@ class Button:
 
 class Button_panel:
 
-    def __init__(self, width, height, pos) -> None:
+    def __init__(self, width, height, pos, panel: Output_panel) -> None:
         self.width = width
         self.height = height
         self.pos = pos
+        self.panel = panel
 
         self.s = pg.surface.Surface((self.width, self.height))
         self.s.fill((100, 100, 100))
 
-        self.b1 = Button(50, 50, (0, 0, 0), '1')
-        self.b1.draw(self.s, (10, 10), self.pos)
+        self.buttons = [Button(50, 50, (0, 0, 0), '1', lambda x: self.panel.text_panel.b_space())]
+        for butt in self.buttons:
+            butt.draw(self.s, (10, 10), self.pos)
     
     def draw(self, surf: pg.surface.Surface, dest):
         surf.blit(self.s, dest)
     
     def handle_press(self, mouse_pos):
-        if self.b1.check_pressed(mouse_pos):
-            self.b1.activate()
+        for butt in self.buttons:
+            if butt.check_pressed(mouse_pos):
+                butt.activate()
+
 
 class Main_window:
 
@@ -172,7 +176,7 @@ class Main_window:
 def main():
     text_panel = Text_panel('')
     panel = Output_panel(300, 100, text_panel)
-    button_panel = Button_panel(300, 300, (0, 100))
+    button_panel = Button_panel(300, 300, (0, 100), panel)
     window = Main_window(panel, button_panel, 300, 400)
     window.mainloop()
 
