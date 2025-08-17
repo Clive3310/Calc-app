@@ -53,6 +53,9 @@ class Text_panel:
         except Exception as e:
             self.text = e.__class__.__name__
         
+        if len(self.text) >= self.limit_length:
+            self.text = 'Overflow'
+        
         self.ren_text = self.font.render(self.text, True, self.color)
     
     def get_square_root(self):
