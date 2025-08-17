@@ -1,4 +1,5 @@
 import pygame as pg
+from math import sqrt
 
 pg.init()
 
@@ -14,7 +15,7 @@ class Text_panel:
         self.stock_width = self.font.render('1', True, self.color).get_width()
 
         self.limit_length = 19
-        self.good_symb = '0123456789-+/*().^%'
+        self.good_symb = '0123456789-+/*().^%²√'
     
     def update_to_new(self, text: str):
         self.text = text
@@ -45,14 +46,26 @@ class Text_panel:
     def eval_and_replace(self):
         if not self.text or self.text[0] not in self.good_symb:
             return
-        
+
         self.text = self.text.replace('^', '**')
         try:
             self.text = str(eval(self.text))
         except Exception as e:
             self.text = e.__class__.__name__
         
-        self.ren_text = self.font.render(self.text, True, self.color) 
+        self.ren_text = self.font.render(self.text, True, self.color)
+    
+    def get_square_root(self):
+        self.eval_and_replace()
+        if not self.text or self.text[0] not in self.good_symb:
+            return
+
+        try:
+            self.text = str(sqrt(float(self.text)))
+        except Exception as e:
+            self.text = e.__class__.__name__
+        
+        self.ren_text = self.font.render(self.text, True, self.color)
 
 
 class Output_panel:
@@ -85,9 +98,12 @@ class Button:
         self.text = text
         self.func = func
         self.box = None
+        self.font = pg.font.SysFont('Calibri', 30)
 
         self.s = pg.surface.Surface((self.width, self.height))
         self.s.fill(self.color)
+        self.ren_text = self.font.render(self.text, True, (0, 0, 0))
+        self.s.blit(self.ren_text, (self.width // 2 - self.ren_text.get_width() // 2, self.height // 2 - self.ren_text.get_height() // 2))
     
     def draw(self, surf: pg.Surface, dest, pos):
         if self.box is None:
@@ -106,26 +122,43 @@ class Button:
 
 class Button_panel:
 
-    def __init__(self, width, height, pos, panel: Output_panel) -> None:
+    def __init__(self, width, height, pos, but_color, panel: Output_panel) -> None:
         self.width = width
         self.height = height
         self.pos = pos
+        self.but_color = but_color
         self.panel = panel
 
         self.s = pg.surface.Surface((self.width, self.height))
         self.s.fill((100, 100, 100))
 
-        self.buttons = [Button(50, 50, (0, 0, 0), '1', lambda x: self.panel.text_panel.b_space())]
-        for butt in self.buttons:
-            butt.draw(self.s, (10, 10), self.pos)
+        butts = [['1', '2', '3', '<-', '('], ['4', '5', '6', 'C', ')'], ['7', '8', '9', '=', '^'], ['+', '-', '*', '/', '²√']]
+
+        self.buttons = [[Button(50, 50, self.but_color, but, lambda x: self.panel.text_panel.add(x)) for but in butts[i]] for i in range(len(butts))]
+
+        for y in range(len(butts)):
+            for x in range(len(butts[0])):
+                self.buttons[y][x].draw(self.s, (5 + 60 * x, 5 + 60 * y), self.pos)
+        
+        self.buttons[0][3].func = lambda x: self.panel.text_panel.b_space()
+        self.buttons[1][3].func = lambda x: self.panel.text_panel.update_to_new('')
+        self.buttons[2][3].func = lambda x: self.panel.text_panel.eval_and_replace()
+        self.buttons[2][4].func = lambda x: self.panel.text_panel.add('^')
+        self.buttons[3][4].func = lambda x: self.panel.text_panel.get_square_root()
+
+        self.zero_butt = Button(50, 50, self.but_color, '0', lambda x: self.panel.text_panel.add(x))
+        self.zero_butt.draw(self.s, (self.width // 2 - 50 // 2, 243), self.pos)
     
     def draw(self, surf: pg.surface.Surface, dest):
         surf.blit(self.s, dest)
     
     def handle_press(self, mouse_pos):
-        for butt in self.buttons:
-            if butt.check_pressed(mouse_pos):
-                butt.activate()
+        for row in self.buttons:
+            for butt in row:
+                if butt.check_pressed(mouse_pos):
+                    butt.activate()
+        if self.zero_butt.check_pressed(mouse_pos):
+            self.zero_butt.activate()
 
 
 class Main_window:
@@ -176,7 +209,7 @@ class Main_window:
 def main():
     text_panel = Text_panel('')
     panel = Output_panel(300, 100, text_panel)
-    button_panel = Button_panel(300, 300, (0, 100), panel)
+    button_panel = Button_panel(300, 300, (0, 100), (1, 109, 200), panel)
     window = Main_window(panel, button_panel, 300, 400)
     window.mainloop()
 
